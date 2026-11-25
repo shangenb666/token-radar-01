@@ -1,3 +1,53 @@
+// Radar-2: how this file turns a snapshot into a ranked board.
+//
+// The question this model answers is simple: if a protocol that has no token
+// today launched one tomorrow, what would it be worth? The answer it gives is
+// a comparable-multiples estimate, not a prediction. It prices a pre-token
+// protocol the way the market already prices the same kind of protocol that
+// does have a token, per dollar of total value locked.
+//
+// The core of the estimate is a single multiple per category, called comps.
+// For each category, comps is the median market-cap-to-TVL ratio among that
+// category's live-token protocols, shrunk toward the global median. The
+// shrinkage matters: a category with only one or two live tokens would give a
+// noisy median, so the prior (the global median, weight 3) pulls it back
+// toward the market as a whole. The result is clamped to [0.05, 1.00] so no
+// category can claim a token worth more than the value it secures, and no
+// category can be priced at zero.
+//
+// Three adjustments then shape the raw multiple into an implied value:
+//   - Growth: a protocol whose TVL rose over the last 7 days earns a premium,
+//     and one whose TVL fell takes a discount. The 7-day change is clamped to
+//     [-50, +150] percent and enters at 60 percent weight, so a single hot
+//     week cannot dominate the valuation.
+//   - Age: a protocol that has survived a long time without a token is more
+//     likely to launch one, and to launch a valuable one. Age enters as a
+//     factor from 0.6 (brand new) to 1.0 (three years or older), so youth is a
+//     discount but never a disqualification. When the snapshot gives no age,
+//     the model assumes one year.
+//   - Breadth: a protocol live on several chains is worth more than the same
+//     TVL on one chain, because each chain is another distribution channel.
+//     Each extra chain (up to four) adds 5 percent.
+//
+// The implied value is therefore:
+//   implied = TVL * comps * growthFactor * ageFactor * chainFactor
+// rounded to the nearest dollar. The board is sorted by this value, highest
+// first, and ranks are assigned 1 through N with no ties broken arbitrarily:
+// two protocols with the same implied value keep the snapshot's order.
+//
+// The farm plan attached to each row is derived, not written by hand. It is a
+// seven-step plan (an action, a repeat action, a weekly action, a hold, a
+// claim, and a log) whose costs and times come from the protocol's category,
+// chain count, TVL, and age. A larger, older, multi-chain protocol gets a
+// bigger, slower plan; a small, young, single-chain one gets a leaner plan.
+// The plan is a starting point for a farmer, not financial advice.
+//
+// Nothing in this file special-cases a protocol by name. One function scores
+// every row from the snapshot's own figures, so the ranking is a property of
+// the data, not of the author's preferences. The only hard-coded numbers are
+// the model's own constants (the prior weight, the clamps, the adjustment
+// weights), and each of them is named and documented where it is used.
+//
 // The token radar's model, radar-2: one snapshot of the protocol universe in, one ranked board out.
 //
 // The board covers every slug in the snapshot's watchlist (the floor, never a ceiling) and adds every
