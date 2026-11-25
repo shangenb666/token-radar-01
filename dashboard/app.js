@@ -1,6 +1,39 @@
 // Token Radar's console dashboard. It reads window.RADAR (written beside dashboard/ by main.ts) and
 // renders the ranked board, a spotlight of the top eight, a filterable table, a per-protocol detail
 // drawer with the model's own inputs and the protocol's farm plan, and a model sandbox that re-prices
+// the top five live. It runs entirely in the browser with no network: every figure on the page comes
+// from the data.js file beside it, and every number the page shows is recomputed from those figures
+// so the page can check itself against board.json.
+//
+// How the page is organized:
+//   - The header states the coverage facts (how many of the 40 watchlist
+//     protocols made the board) so a reader knows at a glance that the board
+//     is complete, not a sample.
+//   - The spotlight shows the top eight protocols as cards, because the head
+//     of the board is where the money is: the first few rows hold most of the
+//     implied value.
+//   - The controls (search text, category, chain, a minimum TVL, a
+//     gainers-only switch, and pre-token/live tabs) filter the table without
+//     a round trip. Sorting is by any column, including the comps multiple,
+//     so a reader can re-rank by the model's inputs instead of its output.
+//   - Each row carries an implied-value bar, so the shape of the board (a
+//     steep head, a long tail) is visible without reading numbers.
+//   - The detail drawer opens per protocol and shows the full equation: the
+//     TVL, the category comps, each adjustment factor, and the product. It
+//     also shows the seven-step farm plan for that protocol. The drawer is
+//     the audit trail: it lets a reader verify any single row by hand.
+//   - The model panel states the formula and lists the top ten comparables,
+//     so the pricing basis is visible rather than hidden.
+//   - The sandbox has three sliders that re-price the top five live
+//     protocols, so a reader can feel how sensitive the board is to the
+//     model's assumptions instead of taking them on trust.
+//
+// The page is hash-driven: the search text, the selected protocol, the
+// category, and the chain live in the URL hash. That is what makes the three
+// screenshots possible (the board, a detail drawer, a filtered view) and what
+// lets a reader link to exactly the view they are looking at.
+// renders the ranked board, a spotlight of the top eight, a filterable table, a per-protocol detail
+// drawer with the model's own inputs and the protocol's farm plan, and a model sandbox that re-prices
 // the top five live. No network: every byte it shows is in data.js.
 (function () {
   'use strict';
